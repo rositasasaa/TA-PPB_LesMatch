@@ -3,9 +3,9 @@ export default function SplashScreen() {
     <div className="splash" role="status" aria-live="polite">
       <div className="splash-inner">
         <img
-          src="/icon-192.png"
-          alt=""
-          className="splash-logo"
+          src="/icon-lesmatch.png"
+          alt="LesMatch"
+          className="splash-logo brightness-0 invert"
           width="96"
           height="96"
         />

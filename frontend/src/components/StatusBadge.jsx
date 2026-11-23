@@ -1,3 +1,5 @@
+import { normalizeStudentStatus } from '../utils/helpers'
+
 const getTone = (status = '') => {
   const value = String(status).toLowerCase()
   if (value.includes('tolak') || value.includes('batal')) return 'danger'
@@ -9,10 +11,12 @@ const getTone = (status = '') => {
 }
 
 export default function StatusBadge({ status = 'Tersedia' }) {
+  const label = normalizeStudentStatus(status)
+
   return (
-    <span className={`status status--${getTone(status)}`}>
+    <span className={`status status--${getTone(label)}`}>
       <span className="status-dot" aria-hidden="true" />
-      {status}
+      {label}
     </span>
   )
 }

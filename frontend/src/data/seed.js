@@ -103,6 +103,7 @@ export const SEED_TUTORS = [
     domisili: 'Tembalang',
     pengalaman: '2 Tahun Mengajar',
     gender: 'Laki-laki',
+    foto_url: '',
   },
   {
     id: 2,
@@ -111,6 +112,7 @@ export const SEED_TUTORS = [
     domisili: 'Banyumanik',
     pengalaman: '3 Tahun Mengajar',
     gender: 'Perempuan',
+    foto_url: '',
   },
   {
     id: 3,
@@ -119,6 +121,7 @@ export const SEED_TUTORS = [
     domisili: 'Semarang Selatan',
     pengalaman: '1 Tahun Mengajar',
     gender: 'Laki-laki',
+    foto_url: '',
   },
   {
     id: 4,
@@ -127,6 +130,7 @@ export const SEED_TUTORS = [
     domisili: 'Pedurungan',
     pengalaman: '2 Tahun Mengajar',
     gender: 'Perempuan',
+    foto_url: '',
   },
 ]
 

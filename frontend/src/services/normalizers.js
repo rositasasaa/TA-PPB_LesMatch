@@ -1,4 +1,4 @@
-import { normalizeGender } from '../utils/helpers'
+import { normalizeGender, normalizeStudentStatus } from '../utils/helpers'
 
 // Normalise rows coming from Supabase (snake_case), the Express API
 // (camelCase) or local seed data into one shape used by the UI.
@@ -10,7 +10,7 @@ export const normalizeStudent = (row = {}) => ({
   mapel: row.mapel ?? row.subject ?? 'Umum',
   hari: row.hari ?? row.jadwal ?? row.schedule ?? '-',
   alamat: row.alamat ?? row.address ?? '-',
-  status: row.status ?? 'Tersedia',
+  status: normalizeStudentStatus(row.status),
   preferensiGender: normalizeGender(
     row.preferensi_gender ??
       row.preferensiGender ??
@@ -36,6 +36,14 @@ export const normalizeTutor = (row = {}) => ({
   gender: normalizeGender(
     row.gender ?? row.jenis_kelamin ?? row.jenisKelamin ?? 'Bebas',
   ),
+  foto_url:
+    row.foto_url ??
+    row.fotoUrl ??
+    row.avatar_url ??
+    row.avatarUrl ??
+    row.photo_url ??
+    row.photoUrl ??
+    '',
 })
 
 export const normalizeSubmission = (row = {}) => ({

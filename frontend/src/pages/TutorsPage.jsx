@@ -1,9 +1,9 @@
 import {
   BookOpen,
+  CheckCircle2,
   GraduationCap,
   Plus,
   Search,
-  Sparkles,
   Users,
   X,
 } from 'lucide-react'
@@ -18,8 +18,10 @@ import {
   uniqueSubjects,
 } from '../utils/helpers'
 import EmptyState from '../components/EmptyState'
+import PhotoUploadPicker from '../components/PhotoUploadPicker'
 import TutorCard from '../components/TutorCard'
 import { CardGridSkeleton } from '../components/Skeletons'
+import { uploadTutorPhoto } from '../services/api'
 
 const INITIAL_FORM = {
   nama: '',
@@ -27,6 +29,7 @@ const INITIAL_FORM = {
   domisili: '',
   pengalaman: '',
   gender: 'Bebas',
+  foto_url: '',
 }
 
 const LOAD_FILTERS = ['Semua', 'Belum memegang siswa', 'Memegang siswa']
@@ -40,6 +43,8 @@ export default function TutorsPage({ onOpenTutor }) {
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(INITIAL_FORM)
+  const [photoFile, setPhotoFile] = useState(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [formSuccess, setFormSuccess] = useState('')
@@ -145,23 +150,39 @@ export default function TutorsPage({ onOpenTutor }) {
     try {
       setSubmitting(true)
       setFormError('')
+
+      let finalFotoUrl = form.foto_url || ''
+      if (photoFile) {
+        setUploadingPhoto(true)
+        try {
+          finalFotoUrl = await uploadTutorPhoto(photoFile)
+        } catch (uploadErr) {
+          console.warn('[LesMatch] Gagal upload foto tentor:', uploadErr)
+        } finally {
+          setUploadingPhoto(false)
+        }
+      }
+
       await addTutor({
         nama: form.nama.trim(),
         keahlian: form.keahlian.trim(),
         domisili: form.domisili.trim(),
         pengalaman: form.pengalaman.trim(),
         gender: form.gender,
+        foto_url: finalFotoUrl,
       })
       setForm(INITIAL_FORM)
+      setPhotoFile(null)
       setShowForm(false)
       setSubject('Semua')
       setLoadFilter('Semua')
-      setFormSuccess('Tentor baru berhasil ditambahkan ke direktori.')
+      setFormSuccess('Tentor berhasil ditambahkan')
       window.setTimeout(() => setFormSuccess(''), 4000)
     } catch (err) {
-      setFormError(err?.message || 'Gagal menambahkan data tentor.')
+      setFormError(err?.message || 'Gagal menambahkan tentor')
     } finally {
       setSubmitting(false)
+      setUploadingPhoto(false)
     }
   }
 
@@ -169,7 +190,7 @@ export default function TutorsPage({ onOpenTutor }) {
     <div className="page">
       <section className="page-hero">
         <span className="eyebrow">
-          <Sparkles size={14} aria-hidden="true" />
+          <BookOpen size={14} aria-hidden="true" />
           Direktori tentor
         </span>
         <h1>
@@ -202,10 +223,6 @@ export default function TutorsPage({ onOpenTutor }) {
         <div className="section-head">
           <div>
             <h2>Daftar tentor</h2>
-            <p>
-              Pilih tentor untuk melihat profil, siswa cocok, dan beban
-              mengajarnya.
-            </p>
           </div>
           <button
             type="button"
@@ -231,10 +248,9 @@ export default function TutorsPage({ onOpenTutor }) {
 
         {formSuccess && (
           <div className="notice notice--success" role="status">
-            <Sparkles size={18} aria-hidden="true" />
+            <CheckCircle2 size={18} aria-hidden="true" />
             <div>
-              <strong>Data tersimpan</strong>
-              <p>{formSuccess}</p>
+              <strong>{formSuccess}</strong>
             </div>
           </div>
         )}
@@ -243,16 +259,23 @@ export default function TutorsPage({ onOpenTutor }) {
           <form className="form-card" onSubmit={handleAddTutor}>
             <div className="form-card-head">
               <div>
-                <h3>Tambah Tentor Baru</h3>
-                <p>
-                  Data langsung tersimpan dan muncul di direktori tentor.
-                </p>
+                <h3>Tambah Tentor</h3>
               </div>
-              <span className="tag tag--accent">
-                <Sparkles size={13} aria-hidden="true" />
-                Real-time
-              </span>
             </div>
+
+            <PhotoUploadPicker
+              name={form.nama}
+              currentPhotoUrl={form.foto_url}
+              onPhotoSelected={(file) => {
+                setPhotoFile(file)
+              }}
+              onPhotoRemoved={() => {
+                setPhotoFile(null)
+                setForm((prev) => ({ ...prev, foto_url: '' }))
+              }}
+              uploading={uploadingPhoto}
+              disabled={submitting}
+            />
 
             <div className="form-grid">
               <label className="field">

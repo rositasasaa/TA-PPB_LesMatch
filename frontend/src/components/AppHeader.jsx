@@ -33,19 +33,19 @@ export default function AppHeader({
           type="button"
           className="brand"
           onClick={onHome}
-          aria-label="Kembali ke daftar siswa"
+          aria-label="Kembali ke beranda"
         >
-          <img
-            src="/logo.svg"
-            alt=""
-            className="brand-mark"
-            width="38"
-            height="38"
-          />
-          <span className="brand-copy">
-            <span className="brand-name">LesMatch</span>
-            <span className="brand-tagline">Distribusi Siswa Les</span>
-          </span>
+          <div className="brand-logo-wrap h-11 md:h-12">
+            <img
+              src="/icon-lesmatch.png"
+              alt=""
+              className="brand-logo-icon h-11 md:h-12 w-auto object-contain"
+            />
+            <span className="brand-wordmark">
+              <span className="brand-wordmark-indigo">Les</span>
+              <span className="brand-wordmark-navy">Match</span>
+            </span>
+          </div>
         </button>
 
         <nav className="top-nav" aria-label="Navigasi utama">
@@ -55,9 +55,8 @@ export default function AppHeader({
               <button
                 key={id}
                 type="button"
-                className={`top-nav-item ${
-                  isActive ? 'top-nav-item--active' : ''
-                }`}
+                className={`top-nav-item ${isActive ? 'top-nav-item--active' : ''
+                  }`}
                 onClick={() => onNavigate(id)}
                 aria-current={isActive ? 'page' : undefined}
               >
@@ -80,11 +79,10 @@ export default function AppHeader({
 
         <div className="header-actions">
           <span
-            className={`connection-chip ${
-              online
+            className={`connection-chip ${online
                 ? 'connection-chip--online'
                 : 'connection-chip--offline'
-            }`}
+              }`}
             title={online ? 'Terhubung ke internet' : 'Mode offline'}
           >
             {online ? <Wifi size={14} /> : <WifiOff size={14} />}

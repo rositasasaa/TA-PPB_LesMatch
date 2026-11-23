@@ -1,4 +1,4 @@
-import { Download, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useState } from 'react'
 
 const DISMISS_KEY = 'lesmatch_install_dismissed'
@@ -28,7 +28,13 @@ export default function InstallBanner({ canInstall, onInstall }) {
   return (
     <aside className="install-banner" aria-label="Pasang aplikasi">
       <span className="install-banner-icon">
-        <Download size={18} aria-hidden="true" />
+        <img
+          src="/icon-lesmatch.png"
+          alt="LesMatch"
+          className="install-banner-app-icon"
+          width="24"
+          height="24"
+        />
       </span>
       <span className="install-banner-copy">
         <strong>Pasang LesMatch</strong>

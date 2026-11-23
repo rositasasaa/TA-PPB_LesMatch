@@ -3,19 +3,20 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
   Inbox,
   Loader2,
   RefreshCw,
   Search,
   Send,
-  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAppData } from '../context/appDataContext'
 import {
+  checkScheduleConflict,
   formatDate,
   isSubmissionApproved,
   isSubmissionPending,
@@ -23,6 +24,7 @@ import {
 } from '../utils/helpers'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
+import ScheduleConflictDialog from '../components/ScheduleConflictDialog'
 import StatusBadge from '../components/StatusBadge'
 
 const STATUS_FILTERS = [
@@ -68,6 +70,7 @@ const matchesStatusFilter = (submission, filter) => {
 
 export default function SubmissionsPage({ onBrowseStudents }) {
   const {
+    students,
     submissions,
     loading,
     stats,
@@ -80,6 +83,7 @@ export default function SubmissionsPage({ onBrowseStudents }) {
   const [statusFilter, setStatusFilter] = useState('Semua')
   const [actionId, setActionId] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [scheduleConflict, setScheduleConflict] = useState(null)
   const [feedback, setFeedback] = useState('')
   const [actionError, setActionError] = useState('')
 
@@ -114,9 +118,51 @@ export default function SubmissionsPage({ onBrowseStudents }) {
     window.setTimeout(() => setFeedback(''), 4500)
   }
 
+  const findStudent = (submission) => {
+    if (!submission) return null
+
+    if (submission.siswaId !== null && submission.siswaId !== undefined) {
+      return (
+        students.find(
+          (student) => String(student.id) === String(submission.siswaId),
+        ) || null
+      )
+    }
+
+    const name = String(submission.namaSiswa || '').trim().toLowerCase()
+    if (!name) return null
+
+    return (
+      students.find(
+        (student) => String(student.nama || '').trim().toLowerCase() === name,
+      ) || null
+    )
+  }
+
+  const getApprovalConflict = (submission) => {
+    const student = findStudent(submission)
+    if (!student) return null
+
+    return checkScheduleConflict(
+      student.hari,
+      submission.namaTentor,
+      students,
+      submissions,
+    )
+  }
+
   const requestAction = (type, submission) => {
     if (actionId !== null) return
     setActionError('')
+
+    if (type === 'approve') {
+      const conflict = getApprovalConflict(submission)
+      if (conflict) {
+        setScheduleConflict(conflict)
+        return
+      }
+    }
+
     setConfirmAction({ type, submission })
   }
 
@@ -124,28 +170,34 @@ export default function SubmissionsPage({ onBrowseStudents }) {
     if (!confirmAction) return
 
     const { type, submission } = confirmAction
+
+    if (type === 'approve') {
+      const conflict = getApprovalConflict(submission)
+      if (conflict) {
+        setConfirmAction(null)
+        setScheduleConflict(conflict)
+        return
+      }
+    }
+
     setActionId(submission.id)
     setActionError('')
 
     try {
       if (type === 'approve') {
         await approveSubmission(submission)
-        notify(
-          `Pengajuan ${submission.namaSiswa} disetujui. Status siswa kini "Sudah Terisi".`,
-        )
+        notify('Status pengajuan diperbarui')
       } else if (type === 'reject') {
         await rejectSubmission(submission)
-        notify(
-          `Pengajuan ${submission.namaSiswa} ditolak. Status siswa diperbarui otomatis.`,
-        )
+        notify('Status pengajuan diperbarui')
       } else {
         await deleteSubmission(submission)
-        notify(`Riwayat pengajuan ${submission.namaSiswa} berhasil dihapus.`)
+        notify('Pengajuan berhasil dihapus')
       }
       setConfirmAction(null)
     } catch (err) {
       setConfirmAction(null)
-      setActionError(err?.message || 'Aksi pengajuan gagal diproses.')
+      setActionError(err?.message || 'Gagal memproses pengajuan')
     } finally {
       setActionId(null)
     }
@@ -155,7 +207,7 @@ export default function SubmissionsPage({ onBrowseStudents }) {
     <div className="page">
       <section className="page-hero">
         <span className="eyebrow">
-          <Sparkles size={14} aria-hidden="true" />
+          <ClipboardCheck size={14} aria-hidden="true" />
           Tindak lanjut HRD
         </span>
         <h1>
@@ -193,9 +245,6 @@ export default function SubmissionsPage({ onBrowseStudents }) {
         <div className="section-head">
           <div>
             <h2>Daftar pengajuan</h2>
-            <p>
-              Riwayat pengajuan beserta aksi konfirmasi HRD dan status terbaru.
-            </p>
           </div>
           <button
             type="button"
@@ -216,8 +265,7 @@ export default function SubmissionsPage({ onBrowseStudents }) {
           <div className="notice notice--success" role="status">
             <CheckCircle2 size={18} aria-hidden="true" />
             <div>
-              <strong>Berhasil</strong>
-              <p>{feedback}</p>
+              <strong>{feedback}</strong>
             </div>
           </div>
         )}
@@ -226,8 +274,7 @@ export default function SubmissionsPage({ onBrowseStudents }) {
           <div className="notice notice--danger" role="alert">
             <AlertCircle size={18} aria-hidden="true" />
             <div>
-              <strong>Terjadi kesalahan</strong>
-              <p>{actionError}</p>
+              <strong>{actionError}</strong>
             </div>
           </div>
         )}
@@ -415,6 +462,14 @@ export default function SubmissionsPage({ onBrowseStudents }) {
         onCancel={() => {
           if (!dialogBusy) setConfirmAction(null)
         }}
+      />
+
+      <ScheduleConflictDialog
+        open={Boolean(scheduleConflict)}
+        conflict={scheduleConflict}
+        tutorName={scheduleConflict?.tutorName}
+        closeLabel="Tutup"
+        onClose={() => setScheduleConflict(null)}
       />
     </div>
   )

@@ -17,20 +17,23 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useAppData } from '../context/appDataContext'
 import {
   GENDER_OPTIONS,
+  checkScheduleConflict,
   getInitials,
   isStudentAvailable,
   isSubmissionApproved,
   isSubmissionPending,
   isSubmissionRejected,
+  normalizeStudentStatus,
   tutorMatchesGender,
   tutorMatchesSubject,
 } from '../utils/helpers'
 import EmptyState from '../components/EmptyState'
 import ConfirmDialog from '../components/ConfirmDialog'
+import ScheduleConflictDialog from '../components/ScheduleConflictDialog'
 import StatusBadge from '../components/StatusBadge'
 import { DetailSkeleton } from '../components/Skeletons'
 
@@ -60,7 +63,8 @@ export default function StudentDetailPage({
   const [confirmed, setConfirmed] = useState(false)
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [createdSubmission, setCreatedSubmission] = useState(null)
+  const [scheduleConflict, setScheduleConflict] = useState(null)
+  const tutorSelectRef = useRef(null)
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -151,7 +155,7 @@ export default function StudentDetailPage({
       mapel: student.mapel || '',
       hari: student.hari || '',
       alamat: student.alamat || '',
-      status: isAvailable ? 'Tersedia' : student.status || 'Sudah Terisi',
+      status: isAvailable ? 'Tersedia' : normalizeStudentStatus(student.status),
       preferensiGender: student.preferensiGender || 'Bebas',
       requestKhusus: student.requestKhusus || '',
     })
@@ -192,10 +196,10 @@ export default function StudentDetailPage({
         requestKhusus: editForm.requestKhusus.trim(),
       })
       setIsEditing(false)
-      setEditSuccess('Data siswa berhasil diperbarui.')
+      setEditSuccess('Data siswa berhasil diperbarui')
       window.setTimeout(() => setEditSuccess(''), 3500)
     } catch (err) {
-      setEditError(err?.message || 'Gagal memperbarui data siswa.')
+      setEditError(err?.message || 'Gagal memperbarui data siswa')
     } finally {
       setSavingEdit(false)
     }
@@ -212,7 +216,7 @@ export default function StudentDetailPage({
       onBack()
     } catch (err) {
       setShowDeleteDialog(false)
-      setDeleteError(err?.message || 'Gagal menghapus data siswa.')
+      setDeleteError(err?.message || 'Gagal menghapus siswa')
     } finally {
       setDeleting(false)
     }
@@ -226,6 +230,18 @@ export default function StudentDetailPage({
       setFormError('Pilih tentor yang akan mengajar terlebih dahulu.')
       return
     }
+
+    const conflict = checkScheduleConflict(
+      student.hari,
+      selectedTutor.nama,
+      students,
+      submissions,
+    )
+    if (conflict) {
+      setScheduleConflict(conflict)
+      return
+    }
+
     if (!confirmed) {
       setFormError('Centang konfirmasi setelah meninjau jadwal dan lokasi.')
       return
@@ -233,18 +249,17 @@ export default function StudentDetailPage({
 
     try {
       setSubmitting(true)
-      const result = await submitApplication({
+      await submitApplication({
         siswaId: student.id,
         namaSiswa: student.nama,
         mapel: student.mapel,
         namaTentor: selectedTutor.nama,
         catatan: note.trim(),
       })
-      setCreatedSubmission(result)
       setNote('')
       setConfirmed(false)
     } catch (error) {
-      setFormError(error?.message || 'Pengajuan gagal dikirim. Coba lagi.')
+      setFormError(error?.message || 'Gagal mengirim pengajuan')
     } finally {
       setSubmitting(false)
     }
@@ -332,8 +347,7 @@ export default function StudentDetailPage({
         <div className="notice notice--success" role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
           <div>
-            <strong>Data diperbarui</strong>
-            <p>{editSuccess}</p>
+            <strong>{editSuccess}</strong>
           </div>
         </div>
       )}
@@ -342,8 +356,7 @@ export default function StudentDetailPage({
         <div className="notice notice--danger" role="alert">
           <AlertCircle size={18} aria-hidden="true" />
           <div>
-            <strong>Gagal menghapus siswa</strong>
-            <p>{deleteError}</p>
+            <strong>{deleteError}</strong>
           </div>
         </div>
       )}
@@ -583,7 +596,6 @@ export default function StudentDetailPage({
             </span>
             <div>
               <h2>Ajukan ke HRD</h2>
-              <p>Pengajuan diteruskan ke HRD atau Branch Manager.</p>
             </div>
           </div>
 
@@ -591,21 +603,16 @@ export default function StudentDetailPage({
             <div className="notice notice--success">
               <CheckCircle2 size={20} aria-hidden="true" />
               <div>
-                <strong>Pengajuan sudah dibuat</strong>
+                <strong>Pengajuan terkirim ke HRD</strong>
                 <p>
                   Status saat ini:{' '}
                   <StatusBadge status={activeSubmission.status} />
                 </p>
-                {createdSubmission && (
-                  <p className="notice-detail">
-                    Pengajuan tersimpan dan menunggu konfirmasi HRD. Status
-                    siswa dan beban tentor akan diperbarui otomatis.
-                  </p>
-                )}
                 <button
                   type="button"
                   className="btn btn--outline btn--sm"
                   onClick={onOpenSubmissions}
+                  style={{ marginTop: '8px' }}
                 >
                   Lihat halaman pengajuan
                 </button>
@@ -617,7 +624,8 @@ export default function StudentDetailPage({
               <div>
                 <strong>Siswa belum dapat diajukan</strong>
                 <p>
-                  Status siswa saat ini <strong>{student.status}</strong>.
+                  Status siswa saat ini{' '}
+                  <strong>{normalizeStudentStatus(student.status)}</strong>.
                   Pengajuan baru hanya tersedia untuk siswa berstatus Tersedia.
                 </p>
               </div>
@@ -643,6 +651,7 @@ export default function StudentDetailPage({
                     Tentor pengajar <span className="req">*</span>
                   </span>
                   <select
+                    ref={tutorSelectRef}
                     className="select"
                     value={tutorId}
                     onChange={(event) => setTutorId(event.target.value)}
@@ -749,6 +758,17 @@ export default function StudentDetailPage({
         onConfirm={handleDelete}
         onCancel={() => {
           if (!deleting) setShowDeleteDialog(false)
+        }}
+      />
+
+      <ScheduleConflictDialog
+        open={Boolean(scheduleConflict)}
+        conflict={scheduleConflict}
+        tutorName={scheduleConflict?.tutorName || selectedTutor?.nama}
+        closeLabel="Pilih tentor lain"
+        onClose={() => {
+          setScheduleConflict(null)
+          window.setTimeout(() => tutorSelectRef.current?.focus(), 0)
         }}
       />
     </div>

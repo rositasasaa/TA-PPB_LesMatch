@@ -2,9 +2,9 @@ import {
   BookOpen,
   CalendarCheck2,
   CheckCircle2,
+  GraduationCap,
   Plus,
   Search,
-  Sparkles,
   Users,
   X,
 } from 'lucide-react'
@@ -13,6 +13,7 @@ import { useAppData } from '../context/appDataContext'
 import {
   GENDER_OPTIONS,
   isStudentAvailable,
+  normalizeStudentStatus,
   uniqueSubjects,
 } from '../utils/helpers'
 import EmptyState from '../components/EmptyState'
@@ -30,7 +31,7 @@ const INITIAL_FORM = {
   requestKhusus: '',
 }
 
-const STATUS_FILTERS = ['Semua', 'Tersedia', 'Sudah Terisi']
+const STATUS_FILTERS = ['Semua', 'Tersedia', 'Sudah Terisi / Diproses']
 
 export default function StudentsPage({ onOpenStudent }) {
   const { students, loading, stats, addStudent } = useAppData()
@@ -66,11 +67,12 @@ export default function StudentsPage({ onOpenStudent }) {
       const matchesSubject =
         subject === 'Semua' || student.mapel === subject
 
-      const available = isStudentAvailable(student)
+      const status = normalizeStudentStatus(student.status)
       const matchesStatus =
         statusFilter === 'Semua' ||
-        (statusFilter === 'Tersedia' && available) ||
-        (statusFilter === 'Sudah Terisi' && !available)
+        (statusFilter === 'Tersedia' && status === 'Tersedia') ||
+        (statusFilter === 'Sudah Terisi / Diproses' &&
+          (status === 'Sudah Terisi' || status === 'Sedang Diajukan'))
 
       return matchesQuery && matchesSubject && matchesStatus
     })
@@ -127,10 +129,10 @@ export default function StudentsPage({ onOpenStudent }) {
       setShowForm(false)
       setSubject('Semua')
       setStatusFilter('Semua')
-      setFormSuccess('Siswa baru berhasil ditambahkan ke daftar waiting list.')
+      setFormSuccess('Siswa berhasil ditambahkan')
       window.setTimeout(() => setFormSuccess(''), 4000)
     } catch (err) {
-      setFormError(err?.message || 'Gagal menambahkan data siswa.')
+      setFormError(err?.message || 'Gagal menambahkan siswa')
     } finally {
       setSubmitting(false)
     }
@@ -140,8 +142,8 @@ export default function StudentsPage({ onOpenStudent }) {
     <div className="page">
       <section className="page-hero">
         <span className="eyebrow">
-          <Sparkles aria-hidden="true" size={14} />
-          Portal distribusi les privat
+          <GraduationCap aria-hidden="true" size={14} />
+          Distribusi siswa les privat
         </span>
         <h1>
           Temukan siswa,
@@ -178,9 +180,6 @@ export default function StudentsPage({ onOpenStudent }) {
         <div className="section-head">
           <div>
             <h2>Daftar siswa</h2>
-            <p>
-              Terpisah otomatis antara siswa tersedia dan yang sudah terisi.
-            </p>
           </div>
           <button
             type="button"
@@ -208,8 +207,7 @@ export default function StudentsPage({ onOpenStudent }) {
           <div className="notice notice--success" role="status">
             <CheckCircle2 size={18} aria-hidden="true" />
             <div>
-              <strong>Data tersimpan</strong>
-              <p>{formSuccess}</p>
+              <strong>{formSuccess}</strong>
             </div>
           </div>
         )}
@@ -218,15 +216,8 @@ export default function StudentsPage({ onOpenStudent }) {
           <form className="form-card" onSubmit={handleAddStudent}>
             <div className="form-card-head">
               <div>
-                <h3>Tambah Siswa Waiting List</h3>
-                <p>
-                  Data langsung tersimpan dan dikelompokkan sesuai statusnya.
-                </p>
+                <h3>Tambah Siswa Baru</h3>
               </div>
-              <span className="tag tag--accent">
-                <Sparkles size={13} aria-hidden="true" />
-                Real-time
-              </span>
             </div>
 
             <div className="form-grid">
@@ -430,7 +421,6 @@ export default function StudentsPage({ onOpenStudent }) {
                     Siswa Tersedia
                     <span className="group-count">{availableList.length}</span>
                   </h3>
-                  <p>Siap diajukan ke HRD.</p>
                 </div>
                 <div className="entity-grid">
                   {availableList.map((student) => (
@@ -452,7 +442,6 @@ export default function StudentsPage({ onOpenStudent }) {
                     Sudah Terisi / Sedang Diproses
                     <span className="group-count">{filledList.length}</span>
                   </h3>
-                  <p>Siswa yang sudah mendapatkan tentor atau menunggu HRD.</p>
                 </div>
                 <div className="entity-grid">
                   {filledList.map((student) => (

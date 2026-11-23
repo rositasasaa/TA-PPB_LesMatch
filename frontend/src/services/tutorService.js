@@ -1,6 +1,7 @@
 import { apiClient, expressClient, IS_SUPABASE } from '../config/api'
 import { SEED_TUTORS } from '../data/seed'
 import { normalizeGender } from '../utils/helpers'
+import { uploadTutorPhoto } from './api'
 import { normalizeTutor } from './normalizers'
 import {
   patchWithColumnFallback,
@@ -87,14 +88,22 @@ const toBasePayload = (payload) => ({
   pengalaman: payload.pengalaman?.trim() || '-',
 })
 
-const toSupabasePayload = (payload) => ({
-  ...toBasePayload(payload),
-  gender: normalizeGender(payload.gender),
-})
+const toSupabasePayload = (payload) => {
+  const data = {
+    ...toBasePayload(payload),
+    gender: normalizeGender(payload.gender),
+  }
+  const foto = payload.foto_url ?? payload.fotoUrl
+  if (foto !== undefined) {
+    data.foto_url = String(foto).trim()
+  }
+  return data
+}
 
 const toPayload = (payload) => ({
   ...toBasePayload(payload),
   gender: normalizeGender(payload.gender),
+  foto_url: String(payload.foto_url ?? payload.fotoUrl ?? '').trim(),
 })
 
 const createLocalTutor = (payload) =>
@@ -156,7 +165,11 @@ const createTutor = async (payload) => {
       )
       const row = Array.isArray(rows) ? rows[0] : rows
       if (!row) throw new Error('Supabase tidak mengembalikan data tentor.')
-      const data = normalizeTutor({ ...row, gender: fullPayload.gender })
+      const data = normalizeTutor({
+        ...row,
+        gender: fullPayload.gender,
+        foto_url: fullPayload.foto_url ?? row?.foto_url ?? '',
+      })
       cacheTutor(data)
       return { data, source: 'supabase' }
     } catch (error) {
@@ -198,7 +211,11 @@ const updateTutor = async (id, payload) => {
       )
       const row = Array.isArray(rows) ? rows[0] : rows
       if (row) {
-        const data = normalizeTutor({ ...row, gender: fullPayload.gender })
+        const data = normalizeTutor({
+        ...row,
+        gender: fullPayload.gender,
+        foto_url: fullPayload.foto_url ?? row?.foto_url ?? '',
+      })
         cacheTutor(data)
         return { data, source: 'supabase' }
       }
@@ -259,9 +276,12 @@ const deleteTutor = async (id) => {
   return { id, source: 'local' }
 }
 
+export { uploadTutorPhoto }
+
 export default {
   fetchTutors,
   createTutor,
   updateTutor,
   deleteTutor,
+  uploadTutorPhoto,
 }

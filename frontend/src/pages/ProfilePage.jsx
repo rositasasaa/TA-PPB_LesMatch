@@ -1,21 +1,12 @@
 import {
-  BadgeCheck,
   BookOpen,
-  Building2,
-  Check,
   CheckCircle2,
-  ClipboardList,
-  CloudOff,
-  Copy,
+  Clock,
   Download,
-  GraduationCap,
-  Info,
   RefreshCw,
-  RotateCcw,
-  Save,
+  Send,
   Smartphone,
-  Sparkles,
-  UserRound,
+  UserCheck,
   Users,
   Wifi,
   WifiOff,
@@ -23,9 +14,7 @@ import {
 import { useState } from 'react'
 import { useAppData } from '../context/appDataContext'
 import ConfirmDialog from '../components/ConfirmDialog'
-import profileService from '../services/profileService'
 import submissionService from '../services/submissionService'
-import { formatDate, getInitials } from '../utils/helpers'
 
 export default function ProfilePage({
   online,
@@ -34,122 +23,229 @@ export default function ProfilePage({
   onInstall,
 }) {
   const { stats, loading, refresh } = useAppData()
-  const [profile, setProfile] = useState(() => profileService.getProfile())
-  const [form, setForm] = useState(() => {
-    const data = profileService.getProfile()
-    return {
-      nama: data.nama,
-      cabang: data.cabang,
-      telepon: data.telepon,
-    }
-  })
-  const [feedback, setFeedback] = useState('')
-  const [copied, setCopied] = useState(false)
   const [showResetDialog, setShowResetDialog] = useState(false)
+  const [syncFeedback, setSyncFeedback] = useState('')
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    setForm((previous) => ({ ...previous, [name]: value }))
-  }
-
-  const handleSave = (event) => {
-    event.preventDefault()
-    const result = profileService.saveProfile(form)
-    if (result.success) {
-      setProfile(result.data)
-      setForm({
-        nama: result.data.nama,
-        cabang: result.data.cabang,
-        telepon: result.data.telepon,
-      })
-      setFeedback('Profil operator berhasil disimpan di perangkat ini.')
-      setTimeout(() => setFeedback(''), 3500)
-    } else {
-      setFeedback('Profil gagal disimpan. Coba lagi.')
-    }
-  }
-
-  const handleCopyId = async () => {
+  const handleManualSync = async () => {
     try {
-      await navigator.clipboard.writeText(profile.id)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await refresh()
+      setSyncFeedback('Data berhasil diperbarui')
+      setTimeout(() => setSyncFeedback(''), 3000)
     } catch {
-      setFeedback('ID operator tidak dapat disalin di browser ini.')
+      setSyncFeedback('Gagal menyegarkan data. Periksa koneksi.')
+      setTimeout(() => setSyncFeedback(''), 3500)
     }
   }
 
-  const handleReset = () => {
+  const handleResetData = () => {
     setShowResetDialog(false)
     submissionService.clearLocalSubmissions()
-    const nextProfile = profileService.resetProfile()
-    setProfile(nextProfile)
-    setForm({
-      nama: nextProfile.nama,
-      cabang: nextProfile.cabang,
-      telepon: nextProfile.telepon,
-    })
-    setFeedback('Data lokal berhasil direset.')
-    setTimeout(() => setFeedback(''), 3500)
+    setSyncFeedback('Data perangkat diatur ulang')
+    setTimeout(() => setSyncFeedback(''), 3500)
     refresh()
   }
 
-  const dataRows = [
-    { label: 'Siswa', value: stats.students, Icon: Users },
-    { label: 'Tentor', value: stats.tutors, Icon: GraduationCap },
-    { label: 'Pengajuan', value: stats.submissions, Icon: ClipboardList },
-    { label: 'Siswa tersedia', value: stats.available, Icon: CheckCircle2 },
-    { label: 'Siswa terisi / diproses', value: stats.filled, Icon: BadgeCheck },
-    { label: 'Pengajuan menunggu HRD', value: stats.pending, Icon: ClipboardList },
-  ]
+  // Live operational counters
+  const totalStudents = stats?.students ?? 0
+  const availableStudents = stats?.available ?? 0
+  const filledStudents = stats?.filled ?? 0
+  const totalTutors = stats?.tutors ?? 0
+  const totalSubmissions = stats?.submissions ?? 0
+  const pendingSubmissions = stats?.pending ?? 0
+  const approvedSubmissions = stats?.approved ?? 0
 
   return (
-    <div className="page">
-      <section className="page-hero">
-        <span className="eyebrow">
-          <Sparkles size={14} aria-hidden="true" />
-          Profil operator
-        </span>
-        <h1>
-          Kenali aplikasinya,
-          <br />
-          <span className="text-accent">atur identitas Anda.</span>
-        </h1>
-        <p>
-          LesMatch adalah portal distribusi siswa les privat yang bisa dipasang
-          di layar utama dan tetap terbuka saat offline.
-        </p>
+    <div className="page profile-page">
+      {/* 1. App Overview Card */}
+      <section className="profile-overview-card panel">
+        <div className="profile-overview-header">
+          <div className="profile-overview-brand">
+            <div className="app-identity-badge">
+              <img
+                src="/icon-lesmatch.png"
+                alt="LesMatch"
+                className="app-identity-icon"
+                width="24"
+                height="24"
+              />
+              <span className="app-identity-name">LesMatch</span>
+            </div>
+            <span className="eyebrow eyebrow--brand">
+              <BookOpen size={14} aria-hidden="true" />
+              Sistem Operasional Les Privat
+            </span>
+            <span className="version-badge">v1.0</span>
+          </div>
+          <h1 className="profile-overview-title">
+            LesMatch — Sistem Distribusi Siswa Les Privat
+          </h1>
+          <p className="profile-overview-desc">
+            Platform Progressive Web App (PWA) terpadu untuk mendistribusikan
+            daftar siswa les privat, mencocokkan jadwal dan keahlian tentor,
+            serta memproses pengajuan bimbingan ke manajemen secara cepat,
+            transparan, dan terstruktur.
+          </p>
+        </div>
+
+        <div className="profile-overview-highlights">
+          <div className="overview-highlight-item">
+            <span className="overview-highlight-icon">
+              <Users size={16} aria-hidden="true" />
+            </span>
+            <span>Distribusi Siswa Terpusat</span>
+          </div>
+          <div className="overview-highlight-item">
+            <span className="overview-highlight-icon">
+              <BookOpen size={16} aria-hidden="true" />
+            </span>
+            <span>Pencocokan Keahlian Tentor</span>
+          </div>
+          <div className="overview-highlight-item">
+            <span className="overview-highlight-icon">
+              <Send size={16} aria-hidden="true" />
+            </span>
+            <span>Pengajuan Terintegrasi HRD</span>
+          </div>
+        </div>
       </section>
 
-      <section className="profile-card panel">
-        <div className="profile-identity">
-          <span className="avatar avatar--xl">{getInitials(profile.nama)}</span>
-          <div className="profile-identity-copy">
-            <span className="eyebrow">Operator aktif</span>
-            <h2>{profile.nama}</h2>
+      {/* 2. Live Operational Summary Cards */}
+      <section className="profile-section">
+        <div className="section-head">
+          <div>
+            <h2>Ringkasan Operasional</h2>
+          </div>
+        </div>
+
+        <div className="profile-metrics-grid">
+          {/* Card 1: Siswa */}
+          <div className="profile-metric-card">
+            <div className="profile-metric-head">
+              <span className="profile-metric-icon profile-metric-icon--brand">
+                <Users size={20} aria-hidden="true" />
+              </span>
+              <span className="profile-metric-title">Total Siswa</span>
+            </div>
+            <div className="profile-metric-val">{totalStudents}</div>
+            <div className="profile-metric-pills">
+              <span className="profile-metric-pill profile-metric-pill--success">
+                <CheckCircle2 size={13} aria-hidden="true" />
+                {availableStudents} Tersedia
+              </span>
+              <span className="profile-metric-pill profile-metric-pill--muted">
+                {filledStudents} Sudah Terisi / Diproses
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Tentor */}
+          <div className="profile-metric-card">
+            <div className="profile-metric-head">
+              <span className="profile-metric-icon profile-metric-icon--accent">
+                <BookOpen size={20} aria-hidden="true" />
+              </span>
+              <span className="profile-metric-title">Total Tentor</span>
+            </div>
+            <div className="profile-metric-val">{totalTutors}</div>
+            <div className="profile-metric-pills">
+              <span className="profile-metric-pill profile-metric-pill--brand">
+                <UserCheck size={13} aria-hidden="true" />
+                Terdaftar di Direktori
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3: Pengajuan */}
+          <div className="profile-metric-card">
+            <div className="profile-metric-head">
+              <span className="profile-metric-icon profile-metric-icon--info">
+                <Send size={20} aria-hidden="true" />
+              </span>
+              <span className="profile-metric-title">Total Pengajuan</span>
+            </div>
+            <div className="profile-metric-val">{totalSubmissions}</div>
+            <div className="profile-metric-pills">
+              <span className="profile-metric-pill profile-metric-pill--warning">
+                <Clock size={13} aria-hidden="true" />
+                {pendingSubmissions} Menunggu HRD
+              </span>
+              <span className="profile-metric-pill profile-metric-pill--success">
+                <CheckCircle2 size={13} aria-hidden="true" />
+                {approvedSubmissions} Disetujui HRD
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Operational Standards & Procedures */}
+      <section className="profile-section">
+        <div className="section-head">
+          <div>
+            <h2>Standar Operasional Lembaga</h2>
+          </div>
+        </div>
+
+        <div className="workflow-grid">
+          {/* Card 1: Standar Penempatan Tentor */}
+          <div className="workflow-card">
+            <div className="workflow-card-top">
+              <span className="workflow-step-badge">Kriteria Penempatan</span>
+              <span className="workflow-icon">
+                <BookOpen size={18} aria-hidden="true" />
+              </span>
+            </div>
+            <h3>Standar Penempatan Tentor</h3>
             <p>
-              <Building2 size={15} aria-hidden="true" />
-              Cabang {profile.cabang}
+              Penempatan tentor diprioritaskan berdasarkan kesesuaian mata
+              pelajaran, domisili terdekat, kecocokan jadwal mingguan, serta
+              preferensi khusus siswa seperti preferensi gender pengajar.
             </p>
-            <button
-              type="button"
-              className="id-chip"
-              onClick={handleCopyId}
-              title="Salin ID operator"
-            >
-              <span>ID {profile.id.slice(0, 8)}…</span>
-              {copied ? (
-                <Check size={14} aria-hidden="true" />
-              ) : (
-                <Copy size={14} aria-hidden="true" />
-              )}
-            </button>
+          </div>
+
+          {/* Card 2: Alur Persetujuan HRD */}
+          <div className="workflow-card">
+            <div className="workflow-card-top">
+              <span className="workflow-step-badge">Validasi Penugasan</span>
+              <span className="workflow-icon">
+                <CheckCircle2 size={18} aria-hidden="true" />
+              </span>
+            </div>
+            <h3>Alur Persetujuan HRD</h3>
+            <p>
+              Setiap pengajuan bimbingan diverifikasi terlebih dahulu oleh HRD
+              sebelum status siswa resmi diperbarui menjadi terisi, memastikan
+              tidak ada jadwal bentrok atau kelebihan beban mengajar.
+            </p>
+          </div>
+
+          {/* Card 3: Sinkronisasi Offline */}
+          <div className="workflow-card">
+            <div className="workflow-card-top">
+              <span className="workflow-step-badge">Akses Fleksibel</span>
+              <span className="workflow-icon">
+                <WifiOff size={18} aria-hidden="true" />
+              </span>
+            </div>
+            <h3>Sinkronisasi Offline</h3>
+            <p>
+              Aplikasi tetap dapat digunakan di lapangan saat jaringan terbatas.
+              Perubahan data tersimpan aman pada perangkat dan otomatis
+              disinkronkan kembali saat koneksi internet aktif.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. PWA & System Status Panel */}
+      <section className="panel system-panel">
+        <div className="section-head section-head--tight">
+          <div>
+            <h2>Status Sistem &amp; Aplikasi</h2>
           </div>
           <span
             className={`connection-chip ${
-              online
-                ? 'connection-chip--online'
-                : 'connection-chip--offline'
+              online ? 'connection-chip--online' : 'connection-chip--offline'
             }`}
           >
             {online ? <Wifi size={14} /> : <WifiOff size={14} />}
@@ -157,226 +253,114 @@ export default function ProfilePage({
           </span>
         </div>
 
-        <form className="profile-form" onSubmit={handleSave}>
-          <div className="form-grid form-grid--3">
-            <label className="field">
-              <span>Nama operator</span>
-              <input
-                className="input"
-                name="nama"
-                value={form.nama}
-                onChange={handleChange}
-                placeholder="Nama Anda"
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Cabang / wilayah</span>
-              <input
-                className="input"
-                name="cabang"
-                value={form.cabang}
-                onChange={handleChange}
-                placeholder="Contoh: Semarang"
-              />
-            </label>
-            <label className="field">
-              <span>Nomor WhatsApp</span>
-              <input
-                className="input"
-                name="telepon"
-                value={form.telepon}
-                onChange={handleChange}
-                placeholder="08xxxxxxxxxx"
-                inputMode="tel"
-              />
-            </label>
-          </div>
-
-          <div className="profile-form-actions">
-            <button type="submit" className="btn btn--primary">
-              <Save size={16} aria-hidden="true" />
-              Simpan profil
-            </button>
-            {feedback && (
-              <span className="inline-success" role="status">
-                <CheckCircle2 size={16} aria-hidden="true" />
-                {feedback}
-              </span>
-            )}
-          </div>
-        </form>
-      </section>
-
-      <div className="profile-grid">
-        <section className="panel about-panel">
-          <div className="panel-head">
-            <span className="panel-icon">
-              <Info size={18} aria-hidden="true" />
-            </span>
-            <div>
-              <h2>Tentang LesMatch</h2>
-              <p>Latar belakang dan tujuan aplikasi.</p>
+        <div className="system-grid">
+          {/* Item 1: Jaringan */}
+          <div className="system-item">
+            <div className="system-item-icon">
+              {online ? <Wifi size={20} /> : <WifiOff size={20} />}
+            </div>
+            <div className="system-item-body">
+              <strong>Koneksi Jaringan</strong>
+              <p>
+                {online
+                  ? 'Aplikasi terhubung ke jaringan dan menyinkronkan data secara langsung.'
+                  : 'Aplikasi berjalan dalam mode offline. Data tetap dapat diakses dari perangkat Anda.'}
+              </p>
             </div>
           </div>
 
-          <p>
-            LesMatch menggantikan cara manual mendistribusikan daftar siswa les
-            yang biasanya menumpuk di grup chat. Data siswa kini terpusat,
-            terkelompok per mata pelajaran, dan bisa diakses tentor kapan saja.
-          </p>
-          <p>
-            Tentor dapat meninjau profil siswa, memilah berdasarkan keahlian,
-            lalu mengirim pengajuan ke HRD langsung dari perangkat. HRD
-            menerima satu daftar pengajuan yang rapi dan mudah ditindaklanjuti.
-          </p>
-
-          <div className="feature-list">
-            <span>
-              <BookOpen size={16} aria-hidden="true" /> Daftar siswa per mata
-              pelajaran
-            </span>
-            <span>
-              <UserRound size={16} aria-hidden="true" /> Direktori tentor dan
-              keahlian
-            </span>
-            <span>
-              <BadgeCheck size={16} aria-hidden="true" /> Pengajuan terpusat
-              untuk HRD
-            </span>
-            <span>
-              <CloudOff size={16} aria-hidden="true" /> Dapat dibuka offline
-              setelah dipasang
-            </span>
-          </div>
-
-          <div className="tech-chips" aria-label="Teknologi yang digunakan">
-            <span>React</span>
-            <span>Vite</span>
-            <span>PWA</span>
-            <span>Poppins</span>
-            <span>Axios</span>
-            <span>Offline-first</span>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <span className="panel-icon panel-icon--accent">
-              <Smartphone size={18} aria-hidden="true" />
-            </span>
-            <div>
-              <h2>Pasang aplikasi</h2>
-              <p>Jadikan LesMatch aplikasi di layar utama.</p>
+          {/* Item 2: PWA Install */}
+          <div className="system-item">
+            <div className="system-item-icon">
+              <Smartphone size={20} />
+            </div>
+            <div className="system-item-body">
+              <strong>Pemasangan Aplikasi</strong>
+              {isInstalled ? (
+                <p className="system-success-text">
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                  LesMatch sudah terpasang di perangkat ini dalam mode mandiri.
+                </p>
+              ) : canInstall ? (
+                <div>
+                  <p>
+                    Aplikasi siap dipasang ke layar utama ponsel atau desktop
+                    untuk akses cepat tanpa perantara bilah alamat.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--sm"
+                    onClick={onInstall}
+                    style={{ marginTop: '8px' }}
+                  >
+                    <Download size={14} aria-hidden="true" />
+                    Pasang LesMatch
+                  </button>
+                </div>
+              ) : (
+                <p>
+                  Dapat dipasang ke layar utama ponsel melalui menu peramban
+                  (Bagikan / Titik Tiga &rarr; Tambahkan ke Layar Utama).
+                </p>
+              )}
             </div>
           </div>
 
-          {isInstalled ? (
-            <div className="notice notice--success">
-              <CheckCircle2 size={20} aria-hidden="true" />
-              <div>
-                <strong>LesMatch sudah terpasang</strong>
-                <p>Aplikasi berjalan dalam mode standalone di perangkat ini.</p>
+          {/* Item 3: Sinkronisasi Data Manual */}
+          <div className="system-item">
+            <div className="system-item-icon">
+              <RefreshCw size={20} className={loading ? 'spin' : ''} />
+            </div>
+            <div className="system-item-body">
+              <strong>Sinkronisasi Data</strong>
+              <p>
+                Segarkan data siswa, tentor, dan pengajuan terbaru secara langsung.
+              </p>
+              <div className="system-sync-action">
+                <button
+                  type="button"
+                  className="btn btn--outline btn--sm"
+                  onClick={handleManualSync}
+                  disabled={loading}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={loading ? 'spin' : ''}
+                    aria-hidden="true"
+                  />
+                  {loading ? 'Menyinkronkan...' : 'Segarkan Data'}
+                </button>
+                {syncFeedback && (
+                  <span className="inline-feedback" role="status">
+                    {syncFeedback}
+                  </span>
+                )}
               </div>
             </div>
-          ) : canInstall ? (
-            <div className="install-card">
-              <p>
-                Browser mendukung pemasangan PWA. Setelah dipasang, LesMatch
-                memiliki ikon sendiri dan dapat dibuka tanpa address bar.
-              </p>
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={onInstall}
-              >
-                <Download size={16} aria-hidden="true" />
-                Pasang LesMatch
-              </button>
-            </div>
-          ) : (
-            <div className="install-card">
-              <p>
-                Buka LesMatch melalui browser di ponsel, lalu gunakan menu
-                browser untuk menambahkan ke layar utama.
-              </p>
-              <details className="install-help">
-                <summary>Lihat cara pasang</summary>
-                <ul>
-                  <li>
-                    <strong>Android / Chrome:</strong> menu ⋮ → “Install app”
-                    atau “Add to Home screen”.
-                  </li>
-                  <li>
-                    <strong>iPhone / Safari:</strong> tombol Share → “Add to
-                    Home Screen”.
-                  </li>
-                </ul>
-              </details>
-            </div>
-          )}
-        </section>
-      </div>
-
-      <section className="panel">
-        <div className="section-head section-head--tight">
-          <div>
-            <h2>Data aplikasi</h2>
-            <p>Ringkasan data yang tersinkron di perangkat ini.</p>
           </div>
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            onClick={refresh}
-            disabled={loading}
-          >
-            <RefreshCw
-              size={15}
-              className={loading ? 'spin' : ''}
-              aria-hidden="true"
-            />
-            Muat ulang
-          </button>
         </div>
 
-        <div className="data-rows">
-          {dataRows.map(({ label, value, Icon }) => (
-            <div className="data-row" key={label}>
-              <span className="data-row-icon">
-                <Icon size={17} aria-hidden="true" />
-              </span>
-              <span className="data-row-label">{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </div>
-
-        <div className="profile-footer">
-          <span>LesMatch v2.0.0 · PWA Distribusi Siswa &amp; Manajemen Tentor</span>
+        <div className="system-footer">
+          <span>
+            LesMatch v1.0 · Sistem Distribusi Siswa Les Privat
+          </span>
           <button
             type="button"
             className="btn btn--ghost-danger btn--sm"
             onClick={() => setShowResetDialog(true)}
           >
-            <RotateCcw size={14} aria-hidden="true" />
-            Reset data lokal
+            Atur Ulang Data Perangkat
           </button>
         </div>
-
-        <p className="profile-footnote">
-          Terakhir diperbarui{' '}
-          {profile.updatedAt ? formatDate(profile.updatedAt) : 'baru saja'} ·
-          Data profil disimpan di localStorage perangkat.
-        </p>
       </section>
 
       <ConfirmDialog
         open={showResetDialog}
-        title="Reset data lokal?"
-        message="Profil operator dan seluruh pengajuan yang tersimpan lokal di perangkat ini akan dihapus. Data siswa dan tentor tidak terpengaruh. Tindakan ini tidak dapat dibatalkan."
-        confirmLabel="Reset data lokal"
+        title="Atur ulang data perangkat?"
+        message="Seluruh data sementara yang tersimpan pada perangkat ini akan dibersihkan dan disinkronkan kembali. Tindakan ini tidak menghapus data utama."
+        confirmLabel="Ya, Atur Ulang"
         tone="danger"
-        onConfirm={handleReset}
+        onConfirm={handleResetData}
         onCancel={() => setShowResetDialog(false)}
       />
     </div>

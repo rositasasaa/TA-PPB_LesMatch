@@ -6,6 +6,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
+import { useState } from 'react'
 import { getInitials } from '../utils/helpers'
 
 export default function TutorCard({
@@ -14,7 +15,9 @@ export default function TutorCard({
   workload,
   onOpen,
 }) {
+  const [imgError, setImgError] = useState(false)
   const loadCount = workload?.count || 0
+  const showPhoto = Boolean(tutor.foto_url && !imgError)
 
   return (
     <button
@@ -23,8 +26,22 @@ export default function TutorCard({
       onClick={() => onOpen(tutor.id)}
       aria-label={`Lihat detail ${tutor.nama}`}
     >
-      <span className="entity-avatar entity-avatar--tutor">
-        {getInitials(tutor.nama)}
+      <span
+        className={`entity-avatar entity-avatar--tutor ${
+          showPhoto ? 'has-photo' : ''
+        }`}
+      >
+        {showPhoto ? (
+          <img
+            src={tutor.foto_url}
+            alt={tutor.nama}
+            className="avatar-img"
+            onError={() => setImgError(true)}
+            loading="lazy"
+          />
+        ) : (
+          getInitials(tutor.nama)
+        )}
       </span>
 
       <span className="entity-body">

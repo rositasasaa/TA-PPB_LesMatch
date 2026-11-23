@@ -24,6 +24,7 @@ create table if not exists public.tentor (
   domisili text not null,
   pengalaman text not null,
   gender text not null default 'Bebas',
+  foto_url text not null default '',
   created_at timestamptz not null default now()
 );
 
@@ -45,6 +46,8 @@ alter table public.siswa
   add column if not exists request_khusus text not null default '';
 alter table public.tentor
   add column if not exists gender text not null default 'Bebas';
+alter table public.tentor
+  add column if not exists foto_url text not null default '';
 
 create index if not exists pengajuan_created_at_idx
   on public.pengajuan (created_at desc);
@@ -142,3 +145,28 @@ grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete
   on public.siswa, public.tentor, public.pengajuan
   to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Supabase Storage: avatars bucket
+-- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "avatars_public_select" on storage.objects;
+create policy "avatars_public_select"
+  on storage.objects for select
+  to anon, authenticated
+  using (bucket_id = 'avatars');
+
+drop policy if exists "avatars_public_insert" on storage.objects;
+create policy "avatars_public_insert"
+  on storage.objects for insert
+  to anon, authenticated
+  with check (bucket_id = 'avatars');
+
+drop policy if exists "avatars_public_update" on storage.objects;
+create policy "avatars_public_update"
+  on storage.objects for update
+  to anon, authenticated
+  using (bucket_id = 'avatars');

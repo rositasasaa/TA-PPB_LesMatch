@@ -1,7 +1,6 @@
 import {
   ClipboardList,
   GraduationCap,
-  Sparkles,
   UserRound,
   Users,
 } from 'lucide-react'
@@ -19,14 +18,17 @@ export default function Footer({ onNavigate }) {
       <div className="footer-inner">
         <div className="footer-brand">
           <img
-            src="/logo.svg"
-            alt=""
-            className="footer-mark"
+            src="/icon-lesmatch.png"
+            alt="LesMatch"
+            className="footer-mark object-contain"
             width="42"
             height="42"
           />
           <div className="footer-brand-copy">
-            <strong>LesMatch</strong>
+            <strong className="brand-wordmark" style={{ fontSize: '20px' }}>
+              <span className="brand-wordmark-indigo">Les</span>
+              <span className="brand-wordmark-navy">Match</span>
+            </strong>
             <p>
               Sistem Distribusi Siswa &amp; Manajemen Tentor Les Privat
             </p>
@@ -51,14 +53,12 @@ export default function Footer({ onNavigate }) {
         <div className="footer-meta">
           <span className="footer-heading">Tentang aplikasi</span>
           <p className="footer-tagline">
-            <Sparkles size={14} aria-hidden="true" />
             Satu alur untuk siswa, tentor, dan HRD.
           </p>
           <div className="footer-tech">
-            <span>React 19</span>
-            <span>Vite</span>
-            <span>PWA</span>
-            <span>v2.0.0</span>
+            <span>Wilayah Semarang</span>
+            <span>Mode Offline Siap</span>
+            <span>v1.0</span>
           </div>
           <p className="footer-copyright">
             © 2026 LesMatch. Seluruh hak cipta dilindungi.

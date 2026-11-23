@@ -10,6 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: [
+        'icon-lesmatch.png',
+        'logo-lesmatch.png',
         'favicon.svg',
         'apple-touch-icon.png',
         'icon-192.png',
@@ -31,23 +33,23 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait-primary',
         background_color: '#f8fafc',
-        theme_color: '#1e293b',
+        theme_color: '#4f46e5',
         categories: ['education', 'productivity'],
         icons: [
           {
-            src: '/icon-192.png',
+            src: '/icon-lesmatch.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/icon-512.png',
+            src: '/icon-lesmatch.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/icon-maskable-512.png',
+            src: '/icon-lesmatch.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

@@ -25,8 +25,10 @@ import {
 } from '../utils/helpers'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
+import PhotoUploadPicker from '../components/PhotoUploadPicker'
 import StudentCard from '../components/StudentCard'
 import { DetailSkeleton } from '../components/Skeletons'
+import { uploadTutorPhoto } from '../services/api'
 
 const EMPTY_FORM = {
   nama: '',
@@ -34,6 +36,7 @@ const EMPTY_FORM = {
   domisili: '',
   pengalaman: '',
   gender: 'Bebas',
+  foto_url: '',
 }
 
 export default function TutorDetailPage({
@@ -55,6 +58,9 @@ export default function TutorDetailPage({
 
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState(EMPTY_FORM)
+  const [editPhotoFile, setEditPhotoFile] = useState(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [heroImgError, setHeroImgError] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState('')
   const [editSuccess, setEditSuccess] = useState('')
@@ -85,7 +91,9 @@ export default function TutorDetailPage({
       domisili: tutor.domisili || '',
       pengalaman: tutor.pengalaman || '',
       gender: tutor.gender || 'Bebas',
+      foto_url: tutor.foto_url || '',
     })
+    setEditPhotoFile(null)
     setEditError('')
     setEditSuccess('')
     setIsEditing(true)
@@ -112,20 +120,37 @@ export default function TutorDetailPage({
     try {
       setSavingEdit(true)
       setEditError('')
+
+      let finalFotoUrl = editForm.foto_url || ''
+      if (editPhotoFile) {
+        setUploadingPhoto(true)
+        try {
+          finalFotoUrl = await uploadTutorPhoto(editPhotoFile)
+        } catch (uploadErr) {
+          console.warn('[LesMatch] Gagal upload foto tentor:', uploadErr)
+        } finally {
+          setUploadingPhoto(false)
+        }
+      }
+
       await updateTutor(tutor.id, {
         nama: editForm.nama.trim(),
         keahlian: editForm.keahlian.trim(),
         domisili: editForm.domisili.trim(),
         pengalaman: editForm.pengalaman.trim(),
         gender: editForm.gender,
+        foto_url: finalFotoUrl,
       })
       setIsEditing(false)
-      setEditSuccess('Profil tentor berhasil diperbarui.')
+      setEditPhotoFile(null)
+      setHeroImgError(false)
+      setEditSuccess('Profil tentor berhasil diperbarui')
       window.setTimeout(() => setEditSuccess(''), 3500)
     } catch (err) {
-      setEditError(err?.message || 'Gagal memperbarui profil tentor.')
+      setEditError(err?.message || 'Gagal memperbarui profil tentor')
     } finally {
       setSavingEdit(false)
+      setUploadingPhoto(false)
     }
   }
 
@@ -140,7 +165,7 @@ export default function TutorDetailPage({
       onBack()
     } catch (err) {
       setShowDeleteDialog(false)
-      setDeleteError(err?.message || 'Gagal menghapus data tentor.')
+      setDeleteError(err?.message || 'Gagal menghapus tentor')
     } finally {
       setDeleting(false)
     }
@@ -215,8 +240,7 @@ export default function TutorDetailPage({
         <div className="notice notice--success" role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
           <div>
-            <strong>Data diperbarui</strong>
-            <p>{editSuccess}</p>
+            <strong>{editSuccess}</strong>
           </div>
         </div>
       )}
@@ -225,15 +249,27 @@ export default function TutorDetailPage({
         <div className="notice notice--danger" role="alert">
           <AlertCircle size={18} aria-hidden="true" />
           <div>
-            <strong>Gagal menghapus tentor</strong>
-            <p>{deleteError}</p>
+            <strong>{deleteError}</strong>
           </div>
         </div>
       )}
 
       <section className="detail-hero">
-        <span className="avatar avatar--xl avatar--tutor">
-          {getInitials(tutor.nama)}
+        <span
+          className={`avatar avatar--xl avatar--tutor ${
+            tutor.foto_url && !heroImgError ? 'has-photo' : ''
+          }`}
+        >
+          {tutor.foto_url && !heroImgError ? (
+            <img
+              src={tutor.foto_url}
+              alt={tutor.nama}
+              className="avatar-img"
+              onError={() => setHeroImgError(true)}
+            />
+          ) : (
+            getInitials(tutor.nama)
+          )}
         </span>
         <div className="detail-hero-copy">
           <span className="eyebrow">Profil tentor</span>
@@ -288,6 +324,20 @@ export default function TutorDetailPage({
 
           {isEditing ? (
             <form className="form" onSubmit={handleSaveEdit}>
+              <PhotoUploadPicker
+                name={editForm.nama}
+                currentPhotoUrl={editForm.foto_url}
+                onPhotoSelected={(file) => {
+                  setEditPhotoFile(file)
+                }}
+                onPhotoRemoved={() => {
+                  setEditPhotoFile(null)
+                  setEditForm((prev) => ({ ...prev, foto_url: '' }))
+                }}
+                uploading={uploadingPhoto}
+                disabled={savingEdit}
+              />
+
               <div className="form-grid">
                 <label className="field field--full">
                   <span>Nama tentor</span>

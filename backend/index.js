@@ -69,7 +69,10 @@ const normalizeTutorPayload = (body, fallback = {}) => ({
   keahlian: body.keahlian !== undefined ? String(body.keahlian).trim() : fallback.keahlian,
   domisili: body.domisili !== undefined ? String(body.domisili).trim() : fallback.domisili,
   pengalaman: body.pengalaman !== undefined ? String(body.pengalaman).trim() : fallback.pengalaman,
-  gender: body.gender !== undefined ? String(body.gender).trim() : (fallback.gender || "Bebas")
+  gender: body.gender !== undefined ? String(body.gender).trim() : (fallback.gender || "Bebas"),
+  foto_url: body.foto_url !== undefined
+    ? String(body.foto_url).trim()
+    : (body.fotoUrl !== undefined ? String(body.fotoUrl).trim() : (fallback.foto_url || ""))
 });
 
 // Endpoint List & Detail Siswa
