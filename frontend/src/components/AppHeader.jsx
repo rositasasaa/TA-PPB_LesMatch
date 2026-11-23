@@ -1,11 +1,31 @@
-import { Download, Wifi, WifiOff } from 'lucide-react'
+import {
+  ClipboardList,
+  Download,
+  GraduationCap,
+  UserRound,
+  Users,
+  Wifi,
+  WifiOff,
+} from 'lucide-react'
+import { useAppData } from '../context/appDataContext'
+
+const TABS = [
+  { id: 'students', label: 'Siswa', Icon: Users },
+  { id: 'tutors', label: 'Tentor', Icon: GraduationCap },
+  { id: 'submissions', label: 'Pengajuan', Icon: ClipboardList },
+  { id: 'profile', label: 'Profil', Icon: UserRound },
+]
 
 export default function AppHeader({
+  active,
+  onNavigate,
   online,
   canInstall,
   onInstall,
   onHome,
 }) {
+  const { stats } = useAppData()
+
   return (
     <header className="app-header">
       <div className="header-inner">
@@ -27,6 +47,36 @@ export default function AppHeader({
             <span className="brand-tagline">Distribusi Siswa Les</span>
           </span>
         </button>
+
+        <nav className="top-nav" aria-label="Navigasi utama">
+          {TABS.map(({ id, label, Icon }) => {
+            const isActive = active === id
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`top-nav-item ${
+                  isActive ? 'top-nav-item--active' : ''
+                }`}
+                onClick={() => onNavigate(id)}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span className="top-nav-icon">
+                  <Icon size={17} strokeWidth={2.1} aria-hidden="true" />
+                  {id === 'submissions' && stats.pending > 0 && (
+                    <span
+                      className="top-nav-badge"
+                      aria-label={`${stats.pending} pengajuan menunggu`}
+                    >
+                      {stats.pending > 9 ? '9+' : stats.pending}
+                    </span>
+                  )}
+                </span>
+                <span>{label}</span>
+              </button>
+            )
+          })}
+        </nav>
 
         <div className="header-actions">
           <span

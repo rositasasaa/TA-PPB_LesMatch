@@ -1,6 +1,6 @@
 # LesMatch Frontend
 
-React + Vite PWA untuk proyek **LesMatch — Distribusi Siswa Les**.
+React + Vite PWA untuk proyek **LesMatch — Distribusi Siswa & Manajemen Tentor**.
 
 Dokumentasi lengkap, cara menjalankan, konfigurasi Supabase, dan deployment Vercel ada di [`../README.md`](../README.md).
 

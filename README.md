@@ -1,31 +1,36 @@
-# LesMatch — Distribusi Siswa Les
+# LesMatch — Distribusi Siswa & Manajemen Tentor
 
 **Tugas Akhir Praktikum Pemrograman Perangkat Bergerak**  
 JavaScript React Progressive Web App (PWA) dengan Supabase, Express, dan Vercel.
 
-LesMatch menggantikan distribusi daftar siswa les yang biasanya tersebar di grup chat menjadi satu portal PWA terpusat. Tentor dapat melihat daftar siswa per mata pelajaran, meninjau detail jadwal dan lokasi, lalu mengirim pengajuan ke HRD/Branch Manager.
+LesMatch menggantikan distribusi daftar siswa les yang biasanya tersebar di grup chat menjadi satu portal PWA terpusat. Semua pengguna dapat mengelola siswa, tentor, dan pengajuan: menambah, memperbarui, menghapus, menyetujui, atau menolak pengajuan langsung dari antarmuka. Status siswa dan beban mengajar tentor tersinkron otomatis tanpa reload.
 
 ---
 
 ## 1. Fitur
 
-- **Bottom navigation** tetap dengan 4 menu: Siswa, Tentor, Pengajuan, Profil.
+- **Top navigation sticky** dengan logo, tautan Siswa, Tentor, Pengajuan, Profil, dan badge jumlah pengajuan menunggu.
 - **6 halaman fungsional**:
   1. Daftar Siswa
   2. Detail Siswa + form pengajuan
   3. Daftar Tentor
-  4. Detail Tentor + siswa yang cocok
-  5. Daftar Pengajuan
+  4. Detail Tentor + siswa cocok + beban mengajar
+  5. Daftar Pengajuan + aksi HRD
   6. Profil / Tentang aplikasi
-- **2 alur list → detail**: siswa → detail siswa, tentor → detail tentor.
-- Filter mata pelajaran, pencarian, dan pengelompokan siswa per mapel.
-- Form pengajuan tersimpan ke tabel `pengajuan` (Supabase) dengan status `Menunggu Konfirmasi HRD`.
+- **CRUD penuh tanpa login/role terpisah**: tambah siswa/tentor, edit dan hapus dari halaman detail, serta hapus riwayat pengajuan.
+- **Alur persetujuan HRD**: setujui pengajuan → status siswa menjadi `Sudah Terisi`; tolak → status kembali `Tersedia` bila tidak ada pengajuan aktif lain.
+- **Sinkronisasi real-time** state siswa, tentor, dan pengajuan melalui context React; beban mengajar dan jumlah siswa cocok dihitung ulang dengan `useMemo`.
+- **Preferensi gender tentor** (`Bebas`, `Perempuan`, `Laki-laki`) dan **request khusus siswa** pada form, kartu, dan halaman detail.
+- **Pencocokan tentor** mempertimbangkan mata pelajaran, ketersediaan siswa, dan preferensi gender.
+- Filter status dengan segmented control, pencarian, dan dropdown mata pelajaran pada halaman Siswa, Tentor, dan Pengajuan.
+- Dialog konfirmasi untuk aksi persetujuan, penolakan, penghapusan, dan reset data lokal.
+- **Footer profesional responsif** berisi navigasi cepat, informasi teknologi/versi, dan hak cipta.
+- **Tema indigo/navy** dengan aksen violet, amber, dan coral; font **Poppins** 400–700.
 - **PWA installable** melalui `vite-plugin-pwa` (Web App Manifest + Service Worker Workbox).
 - **Offline mode**: app shell di-cache, respons GET Supabase di-cache dengan NetworkFirst, dan data seed lokal menjadi fallback terakhir.
 - Profil operator tersimpan di `localStorage`, termasuk ID anonim (UUID) dan statistik aplikasi.
 - UI responsif dengan custom CSS + ikon Lucide React.
-- Data layer berlapis: **Supabase → Express API → data lokal**.
-- Indikator sumber data dan status online/offline di UI.
+- Data layer berlapis: **Supabase → Express API → data lokal** (tanpa label sumber data di UI).
 
 ---
 
@@ -39,7 +44,8 @@ LesMatch menggantikan distribusi daftar siswa les yang biasanya tersebar di grup
 | Database | Supabase PostgreSQL (`siswa`, `tentor`, `pengajuan`) |
 | Fallback API | Express.js (`backend/`, Module 1) |
 | Ikon | Lucide React |
-| Styling | Custom CSS responsif |
+| Font | Poppins (Google Fonts) |
+| Styling | Custom CSS responsif (indigo/navy, violet, amber, coral) |
 | Hosting | Vercel |
 | Source code | GitHub |
 
@@ -54,14 +60,14 @@ LesMatch-ppb/
 ├── frontend/                 # React PWA
 │   ├── public/               # logo, favicon, ikon PWA 192/512/maskable
 │   ├── src/
-│   │   ├── components/       # header, bottom nav, cards, badges, splash, dll.
+│   │   ├── components/       # header, footer, cards, dialog, splash, dll.
 │   │   ├── config/           # axios + Supabase/Express configuration
 │   │   ├── context/          # AppDataProvider (students, tutors, submissions)
 │   │   ├── data/             # seed data untuk fallback offline
 │   │   ├── hooks/            # useOnlineStatus, usePwaInstall
 │   │   ├── pages/            # 6 halaman aplikasi
 │   │   ├── services/         # student, tutor, submission, profile services
-│   │   ├── utils/            # helper format & pencocokan keahlian
+│   │   ├── utils/            # helper format, pencocokan, gender, beban kerja
 │   │   ├── App.jsx
 │   │   ├── App.css
 │   │   └── index.css
@@ -94,7 +100,7 @@ npm run dev
 
 Buka `http://localhost:5173`.
 
-Jika `.env` belum diisi, aplikasi tetap berjalan dengan **API Express** (jika aktif) atau **data lokal** bawaan. Indikator sumber data di kanan atas setiap daftar akan menunjukkan `Supabase`, `API Express`, atau `Data offline`.
+Jika `.env` belum diisi, aplikasi tetap berjalan dengan **API Express** (jika aktif) atau **data lokal** bawaan. Aplikasi otomatis memilih sumber data yang tersedia tanpa menampilkan label sumber di antarmuka.
 
 ### 4.2 Backend Express (fallback Module 1)
 
@@ -140,21 +146,24 @@ Endpoint yang dipakai frontend:
 
 | Data | Supabase PostgREST |
 | --- | --- |
-| Siswa | `GET /rest/v1/siswa?select=*&order=id.asc` |
-| Tentor | `GET /rest/v1/tentor?select=*&order=id.asc` |
-| Pengajuan | `GET /rest/v1/pengajuan?select=*&order=created_at.desc` |
-| Simpan pengajuan | `POST /rest/v1/pengajuan` |
+| Siswa | `GET/POST/PATCH/DELETE /rest/v1/siswa` |
+| Tentor | `GET/POST/PATCH/DELETE /rest/v1/tentor` |
+| Pengajuan | `GET/POST/PATCH/DELETE /rest/v1/pengajuan` |
 
 Semua request dilengkapi header `apikey` dan `Authorization: Bearer <publishable-key>` melalui interceptor Axios di `src/config/api.js`.
+
+`schema.sql` sudah menyertakan migrasi progresif untuk kolom baru (`siswa.preferensi_gender`, `siswa.request_khusus`, `tentor.gender`) serta policy RLS dan grant `select/insert/update/delete` untuk key anon. Jalankan ulang file tersebut di SQL Editor jika project Supabase dibuat sebelum pembaruan ini.
 
 ---
 
 ## 6. Alur Bisnis
 
 1. **Digitasi sistem lama** — daftar siswa les tidak lagi tersebar di grup chat.
-2. **Manajemen waiting list** — data siswa (nama, kelas, mapel, jadwal, alamat, status) tersimpan di Supabase dan dikelompokkan per mata pelajaran.
-3. **Tentor memilih siswa** — tentor membuka tab Tentor atau Siswa, memfilter berdasarkan keahlian, lalu membuka detail siswa.
-4. **Pengajuan ke HRD** — tentor meninjau lokasi/jadwal, memilih dirinya sebagai pengajar, mengisi catatan, dan mengirim pengajuan. Data masuk ke tabel `pengajuan` dengan status `Menunggu Konfirmasi HRD`.
+2. **Manajemen waiting list** — data siswa (nama, kelas, mapel, jadwal, alamat, status, preferensi gender, request khusus) tersimpan di Supabase dan dikelompokkan per status ketersediaan.
+3. **Tentor memilih siswa** — tentor membuka tab Tentor atau Siswa, memfilter berdasarkan keahlian/status, lalu membuka detail siswa. Jumlah siswa cocok dihitung otomatis dari mapel, ketersediaan, dan preferensi gender.
+4. **Pengajuan ke HRD** — tentor meninjau lokasi/jadwal/request khusus, memilih tentor pengajar, mengisi catatan, dan mengirim pengajuan. Status siswa langsung berubah menjadi `Sedang Diajukan`.
+5. **Tindak lanjut HRD** — di halaman Pengajuan, HRD dapat menyetujui (status siswa `Sudah Terisi`, beban tentor bertambah), menolak (status siswa kembali `Tersedia` bila tidak ada pengajuan aktif lain), atau menghapus riwayat pengajuan.
+6. **Pemantauan beban** — detail tentor menampilkan daftar siswa aktif dan jumlahnya berdasarkan pengajuan yang disetujui.
 
 ---
 
@@ -184,10 +193,11 @@ Semua request dilengkapi header `apikey` dan `Authorization: Bearer <publishable
 ## 8. Catatan Implementasi
 
 - **Sumber data berlapis** membuat aplikasi tetap bisa didemokan tanpa kredensial Supabase. Untuk penilaian integrasi API, isi `.env` Supabase dan pastikan tabel sudah dibuat.
-- **RLS policy** pada `schema.sql` mengizinkan `anon` membaca `siswa`/`tentor` dan membaca/menulis `pengajuan`. Untuk produksi nyata, tambahkan autentikasi dan batasi policy sesuai role HRD/tentor.
+- **RLS policy** pada `schema.sql` mengizinkan `anon` melakukan `select/insert/update/delete` pada `siswa`, `tentor`, dan `pengajuan` karena aplikasi ini menggunakan satu peran universal tanpa login. Untuk produksi nyata, tambahkan autentikasi dan batasi policy sesuai role HRD/tentor.
+- **Kolom opsional** (`preferensi_gender`, `request_khusus`, `gender`) dikirim dengan fallback otomatis: jika project Supabase belum dimigrasi, service akan mencoba ulang payload lama agar CRUD tetap berjalan dan menyimpan nilai baru di cache lokal.
 - **Offline**: service worker menggunakan `NetworkFirst` untuk request Supabase. Jika perangkat offline dan cache tersedia, daftar tetap tampil; jika cache belum ada, aplikasi memakai seed lokal.
-- Pengajuan yang dikirim saat offline disimpan di `localStorage` dan ditandai sebagai sumber `Data offline`. Setelah kembali online, pengajuan tersebut tidak otomatis disinkronkan (sesuai batas praktikum); pengajuan baru akan masuk ke Supabase.
-- Endpoint Express bawaan Module 1 hanya menyimpan `siswaId`, `namaSiswa`, `mapel`, dan `namaTentor`; kolom catatan opsional baru tersimpan saat memakai Supabase atau penyimpanan lokal. Ini tidak mengubah kontrak backend Module 1.
+- **Fallback lokal** untuk siswa, tentor, dan pengajuan menggabungkan data remote dengan cache perangkat. Persetujuan, penolakan, dan penghapusan yang dilakukan saat offline tetap terlihat setelah reload.
+- Endpoint Express mendukung `GET/POST/PATCH/DELETE` untuk siswa, tentor, dan pengajuan sebagai fallback Module 1.
 - Backend Express tetap dipertahankan sebagai fallback dan bukti struktur Module 1.
 
 ---

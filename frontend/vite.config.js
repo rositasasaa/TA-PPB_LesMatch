@@ -21,17 +21,17 @@ export default defineConfig({
       },
       manifest: {
         id: '/',
-        name: 'LesMatch — Distribusi Siswa Les',
+        name: 'LesMatch — Distribusi Siswa & Manajemen Tentor',
         short_name: 'LesMatch',
         description:
-          'Portal distribusi siswa les privat: temukan siswa, pilih tentor, dan ajukan ke HRD dalam satu aplikasi.',
+          'Portal distribusi siswa les privat: temukan siswa, pilih tentor, ajukan ke HRD, dan pantau beban mengajar dalam satu aplikasi.',
         lang: 'id',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait-primary',
-        background_color: '#f3f6f2',
-        theme_color: '#0d3b31',
+        background_color: '#f8fafc',
+        theme_color: '#1e293b',
         categories: ['education', 'productivity'],
         icons: [
           {

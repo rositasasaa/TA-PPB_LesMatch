@@ -1,7 +1,21 @@
-import { ChevronRight, GraduationCap, MapPin, Sparkles } from 'lucide-react'
+import {
+  ChevronRight,
+  GraduationCap,
+  MapPin,
+  Sparkles,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { getInitials } from '../utils/helpers'
 
-export default function TutorCard({ tutor, matchCount = 0, onOpen }) {
+export default function TutorCard({
+  tutor,
+  matchCount = 0,
+  workload,
+  onOpen,
+}) {
+  const loadCount = workload?.count || 0
+
   return (
     <button
       type="button"
@@ -16,12 +30,16 @@ export default function TutorCard({ tutor, matchCount = 0, onOpen }) {
       <span className="entity-body">
         <span className="entity-top">
           <span className="entity-name">{tutor.nama}</span>
-          {matchCount > 0 && (
-            <span className="match-chip">
+          <span className="entity-badges">
+            <span
+              className={`match-chip ${
+                matchCount > 0 ? '' : 'match-chip--empty'
+              }`}
+            >
               <Sparkles size={12} aria-hidden="true" />
-              {matchCount} cocok
+              {matchCount > 0 ? `${matchCount} siswa cocok` : 'Belum ada siswa cocok'}
             </span>
-          )}
+          </span>
         </span>
         <span className="entity-sub">{tutor.keahlian}</span>
         <span className="entity-meta">
@@ -31,6 +49,18 @@ export default function TutorCard({ tutor, matchCount = 0, onOpen }) {
         <span className="entity-meta">
           <GraduationCap size={14} aria-hidden="true" />
           {tutor.pengalaman}
+        </span>
+        <span className="entity-meta">
+          <UserRound size={14} aria-hidden="true" />
+          Gender {tutor.gender || 'Bebas'}
+        </span>
+        <span
+          className={`load-chip ${loadCount > 0 ? 'load-chip--active' : ''}`}
+        >
+          <Users size={13} aria-hidden="true" />
+          {loadCount > 0
+            ? `Memegang ${loadCount} siswa aktif`
+            : 'Belum memegang siswa'}
         </span>
       </span>
 

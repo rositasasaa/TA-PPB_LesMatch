@@ -22,10 +22,10 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAppData } from '../context/appDataContext'
+import ConfirmDialog from '../components/ConfirmDialog'
 import profileService from '../services/profileService'
 import submissionService from '../services/submissionService'
 import { formatDate, getInitials } from '../utils/helpers'
-import DataSourceBadge from '../components/DataSourceBadge'
 
 export default function ProfilePage({
   online,
@@ -33,7 +33,7 @@ export default function ProfilePage({
   isInstalled,
   onInstall,
 }) {
-  const { stats, sources, source, loading, refresh } = useAppData()
+  const { stats, loading, refresh } = useAppData()
   const [profile, setProfile] = useState(() => profileService.getProfile())
   const [form, setForm] = useState(() => {
     const data = profileService.getProfile()
@@ -45,6 +45,7 @@ export default function ProfilePage({
   })
   const [feedback, setFeedback] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showResetDialog, setShowResetDialog] = useState(false)
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -79,11 +80,7 @@ export default function ProfilePage({
   }
 
   const handleReset = () => {
-    const confirmed = window.confirm(
-      'Hapus profil operator dan seluruh pengajuan yang tersimpan lokal di perangkat ini?',
-    )
-    if (!confirmed) return
-
+    setShowResetDialog(false)
     submissionService.clearLocalSubmissions()
     const nextProfile = profileService.resetProfile()
     setProfile(nextProfile)
@@ -98,24 +95,12 @@ export default function ProfilePage({
   }
 
   const dataRows = [
-    {
-      label: 'Siswa',
-      value: stats.students,
-      Icon: Users,
-      source: sources.students,
-    },
-    {
-      label: 'Tentor',
-      value: stats.tutors,
-      Icon: GraduationCap,
-      source: sources.tutors,
-    },
-    {
-      label: 'Pengajuan',
-      value: stats.submissions,
-      Icon: ClipboardList,
-      source: sources.submissions,
-    },
+    { label: 'Siswa', value: stats.students, Icon: Users },
+    { label: 'Tentor', value: stats.tutors, Icon: GraduationCap },
+    { label: 'Pengajuan', value: stats.submissions, Icon: ClipboardList },
+    { label: 'Siswa tersedia', value: stats.available, Icon: CheckCircle2 },
+    { label: 'Siswa terisi / diproses', value: stats.filled, Icon: BadgeCheck },
+    { label: 'Pengajuan menunggu HRD', value: stats.pending, Icon: ClipboardList },
   ]
 
   return (
@@ -269,9 +254,9 @@ export default function ProfilePage({
             <span>React</span>
             <span>Vite</span>
             <span>PWA</span>
-            <span>Supabase</span>
+            <span>Poppins</span>
             <span>Axios</span>
-            <span>Vercel</span>
+            <span>Offline-first</span>
           </div>
         </section>
 
@@ -337,9 +322,7 @@ export default function ProfilePage({
         <div className="section-head section-head--tight">
           <div>
             <h2>Data aplikasi</h2>
-            <p>
-              Sumber data aktif: <DataSourceBadge source={source} />
-            </p>
+            <p>Ringkasan data yang tersinkron di perangkat ini.</p>
           </div>
           <button
             type="button"
@@ -357,26 +340,23 @@ export default function ProfilePage({
         </div>
 
         <div className="data-rows">
-          {dataRows.map(({ label, value, Icon, source: rowSource }) => (
+          {dataRows.map(({ label, value, Icon }) => (
             <div className="data-row" key={label}>
               <span className="data-row-icon">
                 <Icon size={17} aria-hidden="true" />
               </span>
               <span className="data-row-label">{label}</span>
               <strong>{value}</strong>
-              <DataSourceBadge source={rowSource} />
             </div>
           ))}
         </div>
 
         <div className="profile-footer">
-          <span>
-            LesMatch v1.0.0 · Tugas Akhir Praktikum PPB
-          </span>
+          <span>LesMatch v2.0.0 · PWA Distribusi Siswa &amp; Manajemen Tentor</span>
           <button
             type="button"
             className="btn btn--ghost-danger btn--sm"
-            onClick={handleReset}
+            onClick={() => setShowResetDialog(true)}
           >
             <RotateCcw size={14} aria-hidden="true" />
             Reset data lokal
@@ -389,6 +369,16 @@ export default function ProfilePage({
           Data profil disimpan di localStorage perangkat.
         </p>
       </section>
+
+      <ConfirmDialog
+        open={showResetDialog}
+        title="Reset data lokal?"
+        message="Profil operator dan seluruh pengajuan yang tersimpan lokal di perangkat ini akan dihapus. Data siswa dan tentor tidak terpengaruh. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Reset data lokal"
+        tone="danger"
+        onConfirm={handleReset}
+        onCancel={() => setShowResetDialog(false)}
+      />
     </div>
   )
 }

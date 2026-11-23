@@ -1,8 +1,8 @@
 {
   "name": "lesmatch",
   "private": true,
-  "version": "1.0.0",
-  "description": "LesMatch — PWA distribusi siswa les privat (React + Vite + Supabase)",
+  "version": "2.0.0",
+  "description": "LesMatch — PWA distribusi siswa les privat dan manajemen tentor (React + Vite + Supabase)",
   "type": "module",
   "engines": {
     "node": ">=20.19.0"

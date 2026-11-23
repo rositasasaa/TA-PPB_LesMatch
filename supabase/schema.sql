@@ -1,6 +1,7 @@
 -- ===========================================================================
 -- LesMatch — Supabase schema
 -- Run this once in Supabase Dashboard → SQL Editor → New query.
+-- Safe to re-run: columns, policies and grants use idempotent statements.
 -- ===========================================================================
 
 create table if not exists public.siswa (
@@ -11,6 +12,8 @@ create table if not exists public.siswa (
   hari text not null,
   alamat text not null,
   status text not null default 'Tersedia',
+  preferensi_gender text not null default 'Bebas',
+  request_khusus text not null default '',
   created_at timestamptz not null default now()
 );
 
@@ -20,6 +23,7 @@ create table if not exists public.tentor (
   keahlian text not null,
   domisili text not null,
   pengalaman text not null,
+  gender text not null default 'Bebas',
   created_at timestamptz not null default now()
 );
 
@@ -34,8 +38,19 @@ create table if not exists public.pengajuan (
   created_at timestamptz not null default now()
 );
 
+-- Progressive migration for projects created with an older schema.
+alter table public.siswa
+  add column if not exists preferensi_gender text not null default 'Bebas';
+alter table public.siswa
+  add column if not exists request_khusus text not null default '';
+alter table public.tentor
+  add column if not exists gender text not null default 'Bebas';
+
 create index if not exists pengajuan_created_at_idx
   on public.pengajuan (created_at desc);
+
+create index if not exists pengajuan_status_idx
+  on public.pengajuan (status);
 
 -- ---------------------------------------------------------------------------
 -- Row Level Security
@@ -44,18 +59,59 @@ alter table public.siswa enable row level security;
 alter table public.tentor enable row level security;
 alter table public.pengajuan enable row level security;
 
+-- Siswa -------------------------------------------------------------------
 drop policy if exists "siswa_read_public" on public.siswa;
 create policy "siswa_read_public"
   on public.siswa for select
   to anon, authenticated
   using (true);
 
+drop policy if exists "siswa_insert_public" on public.siswa;
+create policy "siswa_insert_public"
+  on public.siswa for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "siswa_update_public" on public.siswa;
+create policy "siswa_update_public"
+  on public.siswa for update
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "siswa_delete_public" on public.siswa;
+create policy "siswa_delete_public"
+  on public.siswa for delete
+  to anon, authenticated
+  using (true);
+
+-- Tentor ------------------------------------------------------------------
 drop policy if exists "tentor_read_public" on public.tentor;
 create policy "tentor_read_public"
   on public.tentor for select
   to anon, authenticated
   using (true);
 
+drop policy if exists "tentor_insert_public" on public.tentor;
+create policy "tentor_insert_public"
+  on public.tentor for insert
+  to anon, authenticated
+  with check (true);
+
+drop policy if exists "tentor_update_public" on public.tentor;
+create policy "tentor_update_public"
+  on public.tentor for update
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "tentor_delete_public" on public.tentor;
+create policy "tentor_delete_public"
+  on public.tentor for delete
+  to anon, authenticated
+  using (true);
+
+-- Pengajuan ---------------------------------------------------------------
 drop policy if exists "pengajuan_read_public" on public.pengajuan;
 create policy "pengajuan_read_public"
   on public.pengajuan for select
@@ -68,7 +124,21 @@ create policy "pengajuan_insert_public"
   to anon, authenticated
   with check (true);
 
+drop policy if exists "pengajuan_update_public" on public.pengajuan;
+create policy "pengajuan_update_public"
+  on public.pengajuan for update
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "pengajuan_delete_public" on public.pengajuan;
+create policy "pengajuan_delete_public"
+  on public.pengajuan for delete
+  to anon, authenticated
+  using (true);
+
 -- Table privileges for the publishable / anon key.
 grant usage on schema public to anon, authenticated;
-grant select on public.siswa, public.tentor to anon, authenticated;
-grant select, insert on public.pengajuan to anon, authenticated;
+grant select, insert, update, delete
+  on public.siswa, public.tentor, public.pengajuan
+  to anon, authenticated;

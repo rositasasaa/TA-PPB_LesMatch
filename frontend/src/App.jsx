@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import AppHeader from './components/AppHeader'
-import BottomNav from './components/BottomNav'
+import Footer from './components/Footer'
 import InstallBanner from './components/InstallBanner'
 import SplashScreen from './components/SplashScreen'
 import AppDataProvider from './context/AppDataProvider'
@@ -110,6 +110,8 @@ function App() {
         {showSplash && <SplashScreen />}
 
         <AppHeader
+          active={activeTab}
+          onNavigate={navigate}
           online={online}
           canInstall={canInstall}
           onInstall={install}
@@ -119,7 +121,7 @@ function App() {
         <main className="app-main">{page}</main>
 
         <InstallBanner canInstall={canInstall} onInstall={install} />
-        <BottomNav active={activeTab} onNavigate={navigate} />
+        <Footer onNavigate={navigate} />
       </div>
     </AppDataProvider>
   )
